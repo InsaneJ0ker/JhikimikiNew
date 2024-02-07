@@ -22,6 +22,8 @@ namespace JhikimikiNew
 {
     public partial class Form1 : Form
     {
+        private DataTable dataTable;
+
         public Form1()
         {
             InitializeComponent();
@@ -163,6 +165,8 @@ namespace JhikimikiNew
                 // Read the content from the selected file
                 try
                 {
+                    JArray jsonArray = new JArray();
+
                     using StreamReader reader = new StreamReader(filePath);
                     // Read the entire content
                     string fileContent = reader.ReadToEnd();
@@ -171,24 +175,47 @@ namespace JhikimikiNew
                     string[] lines = fileContent.Split(Environment.NewLine.ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
 
                     //Debug.WriteLine(lines);
-
-                    // Access the first line
                     if (lines.Length > 0)
                     {
-                        string firstLine = lines[0];
+                        foreach (string line in lines)
+                        {
+                            // Parse the JSON object from the line
+                            JObject jObject = JsonConvert.DeserializeObject<JObject>(line);
 
-                        JObject jsonObject = JsonConvert.DeserializeObject<JObject>(firstLine);
-
-                        Debug.WriteLine(jsonObject);
-
-                        // Clear all rows
-                        dataGridView1.Rows.Clear();
-
-                        // Clear all columns
-                        dataGridView1.Columns.Clear();
-
-                        createTableFromFile(jsonObject);
+                            // Append the parsed JSON object to the JArray
+                            jsonArray.Add(jObject);
+                        }
                     }
+                    // Access the first line
+                    JObject jsonObject = (JObject)jsonArray[0];
+
+                    Debug.WriteLine(jsonObject);
+
+                    // Clear all rows
+                    dataGridView1.Rows.Clear();
+
+                    // Clear all columns
+                    dataGridView1.Columns.Clear();
+
+                    createTableFromFile(jsonObject);
+
+                    // Process the JSON object and add it to the DataGridView
+                    ProcessJsonPacket(jsonArray);
+                    
+
+                    // Read the JSON file line by line
+                    //using (StreamReader file = new StreamReader(filePath))
+                    //{
+                        //string line;
+                        //while ((line = file.ReadLine()) != null)
+                        //{
+                            // Parse each line as a JSON object
+                            //JObject jsonObject = JObject.Parse(line);
+
+                            // Populate the existing DataTable with the JSON data
+                            //PopulateTableFromFile(jsonObject, (DataTable)dataGridView1.DataSource);
+                        //}
+                    //}
 
 
                 }
@@ -212,7 +239,7 @@ namespace JhikimikiNew
             IList<string> keys = data.Properties().Select(p => p.Name).ToList();
 
             // Create a DataTable
-            DataTable dataTable = new DataTable();
+            dataTable = new DataTable();
 
             foreach (string key in keys)
             {
@@ -232,7 +259,7 @@ namespace JhikimikiNew
 
                         for (int i = 0; i < rValue?.ToString().Length; i++)
                         {
-                            if (headerList[i] != null)
+                            if (headerList[i]?.Length > 0)
                             {
                                 dataTable.Columns.Add("R_" + headerList[i], typeof(string));
                             }
@@ -273,6 +300,86 @@ namespace JhikimikiNew
 
             dataGridView1.DataSource = dataTable;
         }
+
+        private void ProcessJsonPacket(JArray jarray)
+        {
+            try
+            {
+                JArray rNameArray = (JArray)((JObject)jarray[0])["R_NAME"];
+                string[] rNameStrings = rNameArray.Select(rNameValue => rNameValue.ToString()).ToArray();
+                // Iterate over each element in the JArray
+                foreach (JObject json in jarray)
+                {
+                    Debug.Write(json.ToString());
+                    // Create a new DataRow
+                    DataRow newRow = dataTable.NewRow();
+
+                    // Extract values from JSON
+                    double tValue = json.Value<double>("T");
+                    string rValue = json.Value<string>("R");
+                   
+                    
+
+                    // Handle K values dynamically
+                    foreach (var kvp in json)
+                    {
+                        if (kvp.Key.StartsWith("K"))
+                        {
+                            JObject kObject = kvp.Value as JObject;
+                            if (kObject != null)
+                            {
+                                int kAValue = kObject.Value<int>("A");
+                                int kArValue = kObject.Value<int>("AR");
+
+                                // Add K values to the DataRow dynamically
+                                newRow[kvp.Key.ToString() + "_A"] = kAValue;
+                                newRow[kvp.Key.ToString() + "_AR"] = kArValue;
+                            }
+                        }
+                    }
+
+                    // Add values to DataGridView
+                    //DataGridViewRow row = new DataGridViewRow();
+
+                    // Add values to DataRow
+                    newRow["T"] = json.Value<double>("T");
+                    //Debug.WriteLine(string.Join(", ", rNameStrings));
+
+                    //for (int i = rNameStrings.Length - 1; i >= 0; i--)
+                    //{
+                    //    Debug.WriteLine($"R_{i}: {rNameStrings[i]}, Type: {rNameStrings[i]?.GetType()?.ToString() ?? "null"}, Length: {rNameStrings[i]?.Length ?? 0}");
+                    //}
+
+                    // Add individual digits of R value to columns
+                    for (int i = 0; i < rValue.Length; i++)
+                    {
+                        if (rNameStrings[i]?.Length > 0)
+                        {
+                            //Debug.Write(rNameArray[i]);
+                           Debug.WriteLine("R_" + rNameStrings[i]);
+                           newRow["R_" + rNameArray[i]] = int.Parse(json.Value<string>("R")[i].ToString());
+                        }
+                        else
+                        {
+                            Debug.WriteLine("R_" + (rValue.Length - i).ToString());
+                            newRow["R_" + (rValue.Length - i).ToString()] = int.Parse(json.Value<string>("R")[i].ToString());
+                        }
+                    }
+
+                    // Add the DataRow to the DataTable
+                    dataTable.Rows.Add(newRow);
+
+                    // Update the DataGridView with the modified DataTable
+                    dataGridView1.DataSource = null;
+                    dataGridView1.DataSource = dataTable;
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error processing JSON packet: " + ex.Message);
+            }
+        }
+
 
         private void butSave_click(object sender, EventArgs e)
         {

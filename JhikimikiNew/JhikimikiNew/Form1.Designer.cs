@@ -29,6 +29,7 @@
         private void InitializeComponent()
         {
             groupBox1 = new GroupBox();
+            butAddRow = new Button();
             butDelRow = new Button();
             butSend = new Button();
             butSave = new Button();
@@ -43,7 +44,6 @@
             lblCOMStatus = new Label();
             Input = new Label();
             dataGridView1 = new DataGridView();
-            butAddRow = new Button();
             groupBox1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)dataGridView1).BeginInit();
             SuspendLayout();
@@ -70,6 +70,16 @@
             groupBox1.TabIndex = 0;
             groupBox1.TabStop = false;
             groupBox1.Text = "groupBox1";
+            // 
+            // butAddRow
+            // 
+            butAddRow.Location = new Point(652, 110);
+            butAddRow.Name = "butAddRow";
+            butAddRow.Size = new Size(94, 29);
+            butAddRow.TabIndex = 10;
+            butAddRow.Text = "Add Row";
+            butAddRow.UseVisualStyleBackColor = true;
+            butAddRow.Click += butAddRow_click;
             // 
             // butDelRow
             // 
@@ -203,16 +213,9 @@
             dataGridView1.RowHeadersWidth = 51;
             dataGridView1.Size = new Size(776, 248);
             dataGridView1.TabIndex = 1;
-            // 
-            // butAddRow
-            // 
-            butAddRow.Location = new Point(652, 110);
-            butAddRow.Name = "butAddRow";
-            butAddRow.Size = new Size(94, 29);
-            butAddRow.TabIndex = 10;
-            butAddRow.Text = "Add Row";
-            butAddRow.UseVisualStyleBackColor = true;
-            butAddRow.Click += butAddRow_click;
+            dataGridView1.RowsDefaultCellStyle.BackColor = Color.LightGray;
+            dataGridView1.AlternatingRowsDefaultCellStyle.BackColor = Color.White;
+
             // 
             // Form1
             // 

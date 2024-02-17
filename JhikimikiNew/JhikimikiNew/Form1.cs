@@ -24,19 +24,40 @@ namespace JhikimikiNew
     {
         private DataTable dataTable;
 
+        private bool editingZeroRow = false;
+        private bool addingRow = false;
+        private bool fromFile = false;
+
         public Form1()
         {
             InitializeComponent();
             this.Load += new EventHandler(Form1_Load);
+            // Attach event handlers
+            dataGridView1.RowValidating += DataGridView1_RowValidating;
+
         }
 
         private void Form1_Load(object sender, EventArgs e)
         {
+            initTable();
+        }
+
+        private void initTable()
+        {
+            fromFile = false;
             // Specify the path to your JSON file
-            string jsonFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "template", "template.json");
+            //string jsonFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "template", "template.json");
+            string json = @"
+        [
+            {
+                ""columns"": [ ""T"", ""R"", ""K1_A"", ""K1_AR"", ""K2_A"", ""K2_AR"", ""K3_A"", ""K3_AR"", ""K4_A"", ""K4_AR"", ""K5_A"", ""K5_AR"", ""K6_A"", ""K6_AR"" ],
+                ""R_length"": 64
+            }
+        ]";
+            //Debug.WriteLine(jsonFilePath);
 
             // Read JSON from the file
-            string json = File.ReadAllText(jsonFilePath);
+            //string json = File.ReadAllText(jsonFilePath);
 
             // Parse JSON
             JArray jsonArray = JArray.Parse(json);
@@ -61,10 +82,33 @@ namespace JhikimikiNew
                     dataGridView1.Columns.Add(column, column);
                 }
             }
-
+            dataGridView1.Columns["T"].Frozen = true;
         }
 
+        private void DataGridView1_RowValidating(object sender, DataGridViewCellCancelEventArgs e)
+        {
+            Debug.WriteLine("Validation Triggred");
+            Debug.WriteLine(dataGridView1.IsCurrentRowDirty);
+            Debug.WriteLine(dataGridView1.CurrentRow != null);
+            Debug.WriteLine(dataGridView1.CurrentRow.Index == e.RowIndex);
+            // Fill the new row with zeros when editing a row (if it's a new row)
+            if (dataGridView1.IsCurrentRowDirty && dataGridView1.CurrentRow != null && dataGridView1.CurrentRow.Index == e.RowIndex)
+            {
+                foreach (DataGridViewCell cell in dataGridView1.Rows[e.RowIndex].Cells)
+                {
 
+                    if (fromFile == false && cell.Value == null)
+                    {
+                        cell.Value = 0;
+                    }
+
+                    else if (fromFile == true && cell.Value.ToString().Length == 0)
+                    {
+                        cell.Value = 0;
+                    }
+                }
+            }
+        }
 
         private void butScanCOM_click(object sender, EventArgs e)
         {
@@ -110,8 +154,31 @@ namespace JhikimikiNew
 
                         // Now the serial port is open and connected
                         MessageBox.Show($"Connected to {selectedPort}");
-                        serialPort.Write("testWrite\r"); // Write data into the comp port
+                        serialPort.Write("ping\r"); // Write data into the comp port
+                        //string data = serialPort.ReadLine();
+
                         lblCOMStatus.Text = "Connected"; lblCOMStatus.Refresh();
+                        //Debug.Write("hello");
+                        //if (data != null && data == "pong") 
+                        //{
+                        //    lblCOMStatus.Text = "Connected"; lblCOMStatus.Refresh();
+                        //}
+
+                        //else if(data != null && data != "pong")
+                        //{
+                        //    lblCOMStatus.Text = "Unknown Device"; lblCOMStatus.Refresh();
+                        //}
+
+                        //else if(data == null)
+                        //{
+                        //    lblCOMStatus.Text = "Invalid response"; lblCOMStatus.Refresh();
+                        //}
+
+                        //else
+                        //{
+                        //    lblCOMStatus.Text = "Connection failed"; lblCOMStatus.Refresh();
+                        //}
+
                         butConnect.Enabled = false;
                         butDisconnect.Enabled = true;
                     }
@@ -201,23 +268,7 @@ namespace JhikimikiNew
 
                     // Process the JSON object and add it to the DataGridView
                     ProcessJsonPacket(jsonArray);
-                    
-
-                    // Read the JSON file line by line
-                    //using (StreamReader file = new StreamReader(filePath))
-                    //{
-                        //string line;
-                        //while ((line = file.ReadLine()) != null)
-                        //{
-                            // Parse each line as a JSON object
-                            //JObject jsonObject = JObject.Parse(line);
-
-                            // Populate the existing DataTable with the JSON data
-                            //PopulateTableFromFile(jsonObject, (DataTable)dataGridView1.DataSource);
-                        //}
-                    //}
-
-
+                    fromFile = true;
                 }
                 catch (Exception ex)
                 {
@@ -231,6 +282,23 @@ namespace JhikimikiNew
 
         private void butCreate_click(object sender, EventArgs e)
         {
+            try
+            {
+                dataGridView1.DataSource = null;
+
+                // Clear all rows
+                dataGridView1.Rows.Clear();
+
+                // Clear all columns
+                dataGridView1.Columns.Clear();
+
+                initTable();
+            }
+
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
 
         }
 
@@ -261,7 +329,7 @@ namespace JhikimikiNew
                         {
                             if (headerList[i]?.Length > 0)
                             {
-                                dataTable.Columns.Add("R_" + headerList[i], typeof(string));
+                                dataTable.Columns.Add(headerList[i], typeof(string));
                             }
                             else
                             {
@@ -299,6 +367,7 @@ namespace JhikimikiNew
             }
 
             dataGridView1.DataSource = dataTable;
+
         }
 
         private void ProcessJsonPacket(JArray jarray)
@@ -317,8 +386,8 @@ namespace JhikimikiNew
                     // Extract values from JSON
                     double tValue = json.Value<double>("T");
                     string rValue = json.Value<string>("R");
-                   
-                    
+
+
 
                     // Handle K values dynamically
                     foreach (var kvp in json)
@@ -345,19 +414,14 @@ namespace JhikimikiNew
                     newRow["T"] = json.Value<double>("T");
                     //Debug.WriteLine(string.Join(", ", rNameStrings));
 
-                    //for (int i = rNameStrings.Length - 1; i >= 0; i--)
-                    //{
-                    //    Debug.WriteLine($"R_{i}: {rNameStrings[i]}, Type: {rNameStrings[i]?.GetType()?.ToString() ?? "null"}, Length: {rNameStrings[i]?.Length ?? 0}");
-                    //}
-
                     // Add individual digits of R value to columns
                     for (int i = 0; i < rValue.Length; i++)
                     {
                         if (rNameStrings[i]?.Length > 0)
                         {
                             //Debug.Write(rNameArray[i]);
-                           Debug.WriteLine("R_" + rNameStrings[i]);
-                           newRow["R_" + rNameArray[i]] = int.Parse(json.Value<string>("R")[i].ToString());
+                            Debug.WriteLine("R_" + rNameStrings[i]);
+                            newRow[rNameStrings[i]] = int.Parse(json.Value<string>("R")[i].ToString());
                         }
                         else
                         {
@@ -372,6 +436,7 @@ namespace JhikimikiNew
                     // Update the DataGridView with the modified DataTable
                     dataGridView1.DataSource = null;
                     dataGridView1.DataSource = dataTable;
+                    dataGridView1.Columns["T"].Frozen = true;
                 }
             }
             catch (Exception ex)
@@ -379,7 +444,6 @@ namespace JhikimikiNew
                 MessageBox.Show("Error processing JSON packet: " + ex.Message);
             }
         }
-
 
         private void butSave_click(object sender, EventArgs e)
         {
@@ -427,7 +491,7 @@ namespace JhikimikiNew
 
                 //Debug.Write(filePath);
 
-                using (StreamWriter writer = new StreamWriter(filePath, false, Encoding.UTF8))
+                using (StreamWriter writer = new StreamWriter(filePath, false, Encoding.ASCII))
                 {
                     // Iterate through each row
                     foreach (DataGridViewRow row in dataGridView1.Rows)
@@ -454,8 +518,18 @@ namespace JhikimikiNew
                                 // Access the cell value
                                 object cellValue = row.Cells[i].Value;
 
+                                // Check if the column name starts with "R"
+                                if (columnName.StartsWith("R"))
+                                {
+                                    // For R-related values, concatenate them into a single string
+                                    rValueBuilder.Append(cellValue);
+
+                                    // Add other column name to the R_NAME list
+                                    rNameData.Add(columnName);
+                                }
+
                                 // Check if the column name starts with "K"
-                                if (columnName.StartsWith("K"))
+                                else if (columnName.StartsWith("K"))
                                 {
                                     // Extract K-related values 
                                     string[] kParts = columnName.Split('_');
@@ -469,29 +543,12 @@ namespace JhikimikiNew
                                     ((Dictionary<string, object>)rowData[kName])[kType] = cellValue;
                                 }
 
-                                // Check if the column name starts with "R"
-                                else if (columnName.StartsWith("R"))
-                                {
-                                    // For R-related values, concatenate them into a single string
-                                    rValueBuilder.Append(cellValue);
-
-                                    // Add other column name to the R_NAME list
-                                    rNameData.Add(columnName);
-                                }
-
                                 else
                                 {
 
                                     // Add column name and value to the dictionary
                                     rowData[columnName] = cellValue;
                                 }
-
-                                // Add column name and value to the dictionary
-                                //rowData[columnName] = cellValue;
-
-                                // Print column name and value
-                                //writer.Write($"{columnName}: {cellValue}");
-
 
                             }
 
@@ -506,6 +563,7 @@ namespace JhikimikiNew
 
                             // Write the JSON string to the file
                             writer.WriteLine(jsonRow);
+                            //serialPort.Write(jsonRow + "\r");
                         }
                     }
                 }
@@ -555,6 +613,149 @@ namespace JhikimikiNew
 
             // Add the new row to the DataGridView
             dataGridView1.Rows.Add(newRow);
+        }
+
+        private void butSend_click(object sender, EventArgs e)
+        {
+            try
+            {
+                //string baseDirectory = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
+                //string filePath = Path.Combine(baseDirectory, fileName);
+
+                //Debug.Write(filePath);
+
+                // Iterate through each row
+                foreach (DataGridViewRow row in dataGridView1.Rows)
+                {
+                    // Skip the last empty row if it's not a new row
+                    if (!row.IsNewRow)
+                    {
+
+                        // Create a dictionary to store the row data
+                        Dictionary<string, object> rowData = new Dictionary<string, object>();
+
+                        // Create a list to store R_NAME entries
+                        List<string> rNameData = new List<string>();
+
+                        // Create a StringBuilder to concatenate R values
+                        StringBuilder rValueBuilder = new StringBuilder();
+
+                        // Iterate through each cell in the row
+                        for (int i = 0; i < dataGridView1.Columns.Count; i++)
+                        {
+                            // Access the column name
+                            string columnName = dataGridView1.Columns[i].HeaderText;
+
+                            // Access the cell value
+                            object cellValue = row.Cells[i].Value;
+
+                            // Check if the column name starts with "K"
+                            if (columnName.StartsWith("K"))
+                            {
+                                // Extract K-related values 
+                                string[] kParts = columnName.Split('_');
+                                string kName = kParts[0];
+                                string kType = kParts[1];
+
+                                // Create or update the K dictionary
+                                if (!rowData.ContainsKey(kName))
+                                    rowData[kName] = new Dictionary<string, object>();
+
+                                ((Dictionary<string, object>)rowData[kName])[kType] = cellValue;
+                            }
+
+                            // Check if the column name starts with "R"
+                            else if (columnName.StartsWith("R"))
+                            {
+                                // For R-related values, concatenate them into a single string
+                                rValueBuilder.Append(cellValue);
+
+                                // Add other column name to the R_NAME list
+                                rNameData.Add(columnName);
+                            }
+
+                            else
+                            {
+
+                                // Add column name and value to the dictionary
+                                rowData[columnName] = cellValue;
+                            }
+                        }
+
+                        // Add the concatenated R value to the dictionary
+                        rowData["R"] = rValueBuilder.ToString();
+
+                        // Add the R_NAME list to the dictionary
+                        rowData["R_NAME"] = rNameData;
+
+                        // Convert the dictionary to a JSON string
+                        string jsonRow = JsonConvert.SerializeObject(rowData);
+
+                        // Write the JSON string to the file
+                        //writer.WriteLine(jsonRow);
+                        serialPort.Write(jsonRow + "\r");
+                    }
+                }
+
+                MessageBox.Show("Data has been successfully sent to serial port.", "Save Data", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error saving data to file: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void butDelRow_click(object sender, EventArgs e)
+        {
+            // Check if there is at least one row and a row is selected
+            if (dataGridView1.SelectedRows.Count > 0)
+            {
+                // Confirm deletion if necessary
+                DialogResult result = MessageBox.Show("Are you sure you want to delete this row?", "Confirmation", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+
+                if (result == DialogResult.Yes)
+                {
+                    // Delete the selected row
+                    dataGridView1.Rows.RemoveAt(dataGridView1.SelectedRows[0].Index);
+                }
+            }
+            else
+            {
+                MessageBox.Show("Please select a row to delete.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void butAddRow_click(object sender, EventArgs e)
+        {
+            if (dataGridView1.DataSource != null && dataGridView1.DataSource is DataTable)
+            {
+                DataTable dataTable = (DataTable)dataGridView1.DataSource;
+
+                if (dataGridView1.SelectedRows.Count > 0)
+                {
+                    int selectedIndex = dataGridView1.SelectedRows[0].Index;
+
+                    // Add a new row to the DataTable
+                    DataRow newRow = dataTable.NewRow();
+                    dataTable.Rows.InsertAt(newRow, selectedIndex + 1);
+                }
+                else
+                {
+                    // Add a new row at the end of the DataTable
+                    DataRow newRow = dataTable.NewRow();
+                    dataTable.Rows.Add(newRow);
+                }
+
+                // Refresh the DataGridView
+                dataGridView1.Refresh();
+            }
+            else
+            {
+                // Handle the case where the DataGridView is not bound to a DataTable
+                // You may need to adjust this part based on your specific scenario
+                MessageBox.Show("DataGridView is not bound to a DataTable.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
     }
 }

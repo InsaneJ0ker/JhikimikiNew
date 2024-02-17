@@ -29,6 +29,8 @@
         private void InitializeComponent()
         {
             groupBox1 = new GroupBox();
+            butDelRow = new Button();
+            butSend = new Button();
             butSave = new Button();
             ScanCOM = new Button();
             butCreate = new Button();
@@ -41,12 +43,16 @@
             lblCOMStatus = new Label();
             Input = new Label();
             dataGridView1 = new DataGridView();
+            butAddRow = new Button();
             groupBox1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)dataGridView1).BeginInit();
             SuspendLayout();
             // 
             // groupBox1
             // 
+            groupBox1.Controls.Add(butAddRow);
+            groupBox1.Controls.Add(butDelRow);
+            groupBox1.Controls.Add(butSend);
             groupBox1.Controls.Add(butSave);
             groupBox1.Controls.Add(ScanCOM);
             groupBox1.Controls.Add(butCreate);
@@ -60,14 +66,34 @@
             groupBox1.Controls.Add(Input);
             groupBox1.Location = new Point(12, 12);
             groupBox1.Name = "groupBox1";
-            groupBox1.Size = new Size(600, 159);
+            groupBox1.Size = new Size(776, 159);
             groupBox1.TabIndex = 0;
             groupBox1.TabStop = false;
             groupBox1.Text = "groupBox1";
             // 
+            // butDelRow
+            // 
+            butDelRow.Location = new Point(552, 111);
+            butDelRow.Name = "butDelRow";
+            butDelRow.Size = new Size(94, 29);
+            butDelRow.TabIndex = 9;
+            butDelRow.Text = "Delete Row";
+            butDelRow.UseVisualStyleBackColor = true;
+            butDelRow.Click += butDelRow_click;
+            // 
+            // butSend
+            // 
+            butSend.Location = new Point(593, 38);
+            butSend.Name = "butSend";
+            butSend.Size = new Size(94, 29);
+            butSend.TabIndex = 8;
+            butSend.Text = "Send";
+            butSend.UseVisualStyleBackColor = true;
+            butSend.Click += butSend_click;
+            // 
             // butSave
             // 
-            butSave.Location = new Point(493, 110);
+            butSave.Location = new Point(452, 111);
             butSave.Name = "butSave";
             butSave.Size = new Size(94, 29);
             butSave.TabIndex = 7;
@@ -87,7 +113,7 @@
             // 
             // butCreate
             // 
-            butCreate.Location = new Point(393, 110);
+            butCreate.Location = new Point(352, 110);
             butCreate.Name = "butCreate";
             butCreate.Size = new Size(94, 29);
             butCreate.TabIndex = 5;
@@ -107,7 +133,7 @@
             // 
             // butLoad
             // 
-            butLoad.Location = new Point(293, 111);
+            butLoad.Location = new Point(252, 111);
             butLoad.Name = "butLoad";
             butLoad.Size = new Size(94, 29);
             butLoad.TabIndex = 4;
@@ -178,6 +204,16 @@
             dataGridView1.Size = new Size(776, 248);
             dataGridView1.TabIndex = 1;
             // 
+            // butAddRow
+            // 
+            butAddRow.Location = new Point(652, 110);
+            butAddRow.Name = "butAddRow";
+            butAddRow.Size = new Size(94, 29);
+            butAddRow.TabIndex = 10;
+            butAddRow.Text = "Add Row";
+            butAddRow.UseVisualStyleBackColor = true;
+            butAddRow.Click += butAddRow_click;
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
@@ -209,5 +245,8 @@
         private Button butLoad;
         private Button butCreate;
         private Button butSave;
+        private Button butSend;
+        private Button butDelRow;
+        private Button butAddRow;
     }
 }

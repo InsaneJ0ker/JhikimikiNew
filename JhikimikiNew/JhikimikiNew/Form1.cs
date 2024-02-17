@@ -752,9 +752,23 @@ namespace JhikimikiNew
             }
             else
             {
-                // Handle the case where the DataGridView is not bound to a DataTable
-                // You may need to adjust this part based on your specific scenario
-                MessageBox.Show("DataGridView is not bound to a DataTable.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                // Get the index of the selected row
+                int selectedIndex = dataGridView1.SelectedCells[0].RowIndex;
+
+                // Get the number of columns in the DataGridView
+                int columnCount = dataGridView1.Columns.Count;
+
+                // Create an array to store zero values for each column
+                object[] rowData = new object[columnCount];
+
+                // Fill the array with zero values
+                for (int i = 0; i < columnCount; i++)
+                {
+                    rowData[i] = 0;
+                }
+
+                // Insert a new row before the selected row with zero values
+                dataGridView1.Rows.Insert(selectedIndex, rowData);
             }
         }
     }
